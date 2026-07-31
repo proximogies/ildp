@@ -1,0 +1,580 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── AUTH & USERS ────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(uuid())
+  firstName     String
+  lastName      String
+  email         String    @unique
+  phone         String?
+  passwordHash  String
+  status        UserStatus @default(invited)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  userRoles           UserRole[]
+  createdAssociations Association[]       @relation("CreatedBy")
+  assignedAssessments Assessment[]        @relation("AssignedTo")
+  submittedAssessments Assessment[]       @relation("SubmittedBy")
+  reviewedAssessments Assessment[]        @relation("ReviewedBy")
+  responses           AssessmentResponse[]
+  actionPlans         ActionPlan[]        @relation("AssignedTo")
+  createdActionPlans  ActionPlan[]        @relation("CreatedBy")
+  actionPlanUpdates   ActionPlanUpdate[]
+  uploadedFiles       UploadedFile[]
+  reports             Report[]
+  notifications       Notification[]
+  auditLogs           AuditLog[]
+  createdRounds       AssessmentRound[]
+
+  @@map("users")
+}
+
+enum UserStatus {
+  active
+  inactive
+  suspended
+  invited
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  code        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  code        String   @unique
+  module      String
+  description String?
+  createdAt   DateTime @default(now())
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String @id @default(uuid())
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  id     String @id @default(uuid())
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+// ─── ASSOCIATIONS ────────────────────────────────────────────────────────────
+
+model Association {
+  id                 String    @id @default(uuid())
+  name               String
+  code               String?   @unique
+  state              String
+  lga                String?
+  community          String?
+  address            String?
+  valueChain         String?
+  yearEstablished    Int?
+  registrationStatus String?
+  totalMembers       Int?      @default(0)
+  womenMembers       Int?      @default(0)
+  youthMembers       Int?      @default(0)
+  pwdMembers         Int?      @default(0)
+  createdById        String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+
+  createdBy          User?               @relation("CreatedBy", fields: [createdById], references: [id])
+  contacts           AssociationContact[]
+  membershipProfiles MembershipProfile[]
+  leadershipProfiles LeadershipProfile[]
+  assessments        Assessment[]
+  actionPlans        ActionPlan[]
+  reports            Report[]
+
+  @@map("associations")
+}
+
+model AssociationContact {
+  id            String   @id @default(uuid())
+  associationId String
+  name          String
+  roleTitle     String?
+  email         String?
+  phone         String?
+  isPrimary     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  association Association @relation(fields: [associationId], references: [id])
+
+  @@map("association_contacts")
+}
+
+model MembershipProfile {
+  id            String   @id @default(uuid())
+  associationId String
+  totalMembers  Int
+  maleMembers   Int?
+  femaleMembers Int?
+  youthMembers  Int?
+  pwdMembers    Int?
+  snapshotDate  DateTime
+  createdAt     DateTime @default(now())
+
+  association Association @relation(fields: [associationId], references: [id])
+
+  @@map("membership_profiles")
+}
+
+model LeadershipProfile {
+  id              String    @id @default(uuid())
+  associationId   String
+  positionTitle   String
+  occupantName    String?
+  gender          String?
+  ageGroup        String?
+  isYouth         Boolean   @default(false)
+  tenureStartDate DateTime?
+  tenureEndDate   DateTime?
+  activeStatus    Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  association Association @relation(fields: [associationId], references: [id])
+
+  @@map("leadership_profiles")
+}
+
+// ─── ASSESSMENT ROUNDS ───────────────────────────────────────────────────────
+
+model AssessmentRound {
+  id          String              @id @default(uuid())
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  status      AssessmentRoundStatus @default(draft)
+  createdById String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  createdBy   User?        @relation(fields: [createdById], references: [id])
+  assessments Assessment[]
+
+  @@map("assessment_rounds")
+}
+
+enum AssessmentRoundStatus {
+  draft
+  active
+  closed
+  archived
+}
+
+// ─── ASSESSMENTS ─────────────────────────────────────────────────────────────
+
+model Assessment {
+  id                String           @id @default(uuid())
+  assessmentRoundId String
+  associationId     String
+  assessmentType    AssessmentType   @default(self_assessment)
+  assignedToId      String?
+  submittedById     String?
+  reviewedById      String?
+  status            AssessmentStatus @default(draft)
+  submittedAt       DateTime?
+  reviewedAt        DateTime?
+  approvedAt        DateTime?
+  overallScore      Float?
+  scoreBandId       String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  assessmentRound AssessmentRound      @relation(fields: [assessmentRoundId], references: [id])
+  association     Association          @relation(fields: [associationId], references: [id])
+  assignedTo      User?                @relation("AssignedTo", fields: [assignedToId], references: [id])
+  submittedBy     User?                @relation("SubmittedBy", fields: [submittedById], references: [id])
+  reviewedBy      User?                @relation("ReviewedBy", fields: [reviewedById], references: [id])
+  scoreBand       ScoreBand?           @relation(fields: [scoreBandId], references: [id])
+  responses       AssessmentResponse[]
+  scores          AssessmentScore[]
+  actionPlans     ActionPlan[]
+  reports         Report[]
+
+  @@map("assessments")
+}
+
+enum AssessmentType {
+  self_assessment
+  facilitator_led
+  validated
+}
+
+enum AssessmentStatus {
+  draft
+  in_progress
+  submitted
+  under_review
+  correction_requested
+  approved
+  rejected
+  closed
+}
+
+// ─── ILM DOMAINS & INDICATORS ────────────────────────────────────────────────
+
+model AssessmentDomain {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  title       String
+  description String?
+  sortOrder   Int
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  indicators  DomainIndicator[]
+  responses   AssessmentResponse[]
+  scores      AssessmentScore[]
+  actionPlans ActionPlan[]
+  recommendations Recommendation[]
+
+  @@map("assessment_domains")
+}
+
+model DomainIndicator {
+  id               String      @id @default(uuid())
+  domainId         String
+  code             String      @unique
+  title            String
+  description      String?
+  weight           Float       @default(1.0)
+  scoringType      ScoringType @default(numeric_scale)
+  requiredEvidence Boolean     @default(false)
+  sortOrder        Int
+  isActive         Boolean     @default(true)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  domain          AssessmentDomain     @relation(fields: [domainId], references: [id])
+  questions       IndicatorQuestion[]
+  responses       AssessmentResponse[]
+  scores          AssessmentScore[]
+  actionPlans     ActionPlan[]
+  recommendations Recommendation[]
+
+  @@map("domain_indicators")
+}
+
+enum ScoringType {
+  numeric_scale
+  yes_no
+  weighted_choice
+  manual_review
+}
+
+model IndicatorQuestion {
+  id                  String    @id @default(uuid())
+  indicatorId         String
+  questionText        String
+  helpText            String?
+  inputType           InputType @default(text)
+  responseOptionsJson Json?
+  validationRulesJson Json?
+  scoreMappingJson    Json?
+  sortOrder           Int
+  isRequired          Boolean   @default(false)
+  isActive            Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  indicator DomainIndicator      @relation(fields: [indicatorId], references: [id])
+  responses AssessmentResponse[]
+
+  @@map("indicator_questions")
+}
+
+enum InputType {
+  text
+  textarea
+  number
+  date
+  radio
+  checkbox
+  select
+  file
+  rating_scale
+  yes_no
+}
+
+// ─── RESPONSES & EVIDENCE ────────────────────────────────────────────────────
+
+model AssessmentResponse {
+  id                  String   @id @default(uuid())
+  assessmentId        String
+  domainId            String
+  indicatorId         String
+  questionId          String
+  responseValueText   String?
+  responseValueNumber Float?
+  responseValueJson   Json?
+  comment             String?
+  enteredById         String?
+  enteredAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  assessment Assessment        @relation(fields: [assessmentId], references: [id])
+  domain     AssessmentDomain  @relation(fields: [domainId], references: [id])
+  indicator  DomainIndicator   @relation(fields: [indicatorId], references: [id])
+  question   IndicatorQuestion @relation(fields: [questionId], references: [id])
+  enteredBy  User?             @relation(fields: [enteredById], references: [id])
+  evidence   ResponseEvidence[]
+
+  @@unique([assessmentId, questionId])
+  @@map("assessment_responses")
+}
+
+model UploadedFile {
+  id          String   @id @default(uuid())
+  fileName    String
+  filePath    String
+  fileType    String
+  fileSize    Int
+  uploadedById String?
+  uploadedAt  DateTime @default(now())
+  storageDisk String   @default("local")
+  checksum    String?
+
+  uploadedBy User?              @relation(fields: [uploadedById], references: [id])
+  evidence   ResponseEvidence[]
+
+  @@map("uploaded_files")
+}
+
+model ResponseEvidence {
+  id         String   @id @default(uuid())
+  responseId String
+  fileId     String
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  response AssessmentResponse @relation(fields: [responseId], references: [id])
+  file     UploadedFile       @relation(fields: [fileId], references: [id])
+
+  @@map("response_evidence")
+}
+
+// ─── SCORING ─────────────────────────────────────────────────────────────────
+
+model ScoreBand {
+  id                 String   @id @default(uuid())
+  name               String
+  minScore           Float
+  maxScore           Float
+  colorCode          String?
+  interpretationText String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  assessments Assessment[]
+  scores      AssessmentScore[]
+
+  @@map("score_bands")
+}
+
+model AssessmentScore {
+  id             String     @id @default(uuid())
+  assessmentId   String
+  domainId       String?
+  indicatorId    String?
+  scoreLevel     ScoreLevel
+  rawScore       Float
+  normalizedScore Float?
+  weightedScore  Float?
+  scoreBandId    String?
+  calculatedAt   DateTime   @default(now())
+
+  assessment  Assessment        @relation(fields: [assessmentId], references: [id])
+  domain      AssessmentDomain? @relation(fields: [domainId], references: [id])
+  indicator   DomainIndicator?  @relation(fields: [indicatorId], references: [id])
+  scoreBand   ScoreBand?        @relation(fields: [scoreBandId], references: [id])
+
+  @@map("assessment_scores")
+}
+
+enum ScoreLevel {
+  indicator
+  domain
+  overall
+}
+
+// ─── RECOMMENDATIONS & ACTION PLANS ──────────────────────────────────────────
+
+model Recommendation {
+  id                 String   @id @default(uuid())
+  domainId           String?
+  indicatorId        String?
+  conditionType      String?
+  conditionValue     String?
+  title              String
+  recommendationText String
+  priorityLevel      Priority @default(medium)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  domain      AssessmentDomain? @relation(fields: [domainId], references: [id])
+  indicator   DomainIndicator?  @relation(fields: [indicatorId], references: [id])
+  actionPlans ActionPlan[]
+
+  @@map("recommendations")
+}
+
+model ActionPlan {
+  id               String           @id @default(uuid())
+  assessmentId     String?
+  associationId    String
+  domainId         String?
+  indicatorId      String?
+  recommendationId String?
+  title            String
+  description      String?
+  assignedToId     String?
+  dueDate          DateTime?
+  priority         Priority         @default(medium)
+  status           ActionPlanStatus @default(not_started)
+  createdById      String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  completedAt      DateTime?
+
+  assessment     Assessment?      @relation(fields: [assessmentId], references: [id])
+  association    Association      @relation(fields: [associationId], references: [id])
+  domain         AssessmentDomain? @relation(fields: [domainId], references: [id])
+  indicator      DomainIndicator?  @relation(fields: [indicatorId], references: [id])
+  recommendation Recommendation?  @relation(fields: [recommendationId], references: [id])
+  assignedTo     User?            @relation("AssignedTo", fields: [assignedToId], references: [id])
+  createdBy      User?            @relation("CreatedBy", fields: [createdById], references: [id])
+  updates        ActionPlanUpdate[]
+
+  @@map("action_plans")
+}
+
+enum Priority {
+  low
+  medium
+  high
+  critical
+}
+
+enum ActionPlanStatus {
+  not_started
+  in_progress
+  completed
+  overdue
+  blocked
+}
+
+model ActionPlanUpdate {
+  id              String           @id @default(uuid())
+  actionPlanId    String
+  updateNote      String
+  progressPercent Int?
+  status          ActionPlanStatus
+  updatedById     String?
+  updatedAt       DateTime         @default(now())
+
+  actionPlan ActionPlan @relation(fields: [actionPlanId], references: [id])
+  updatedBy  User?      @relation(fields: [updatedById], references: [id])
+
+  @@map("action_plan_updates")
+}
+
+// ─── REPORTS, NOTIFICATIONS, AUDIT ───────────────────────────────────────────
+
+model Report {
+  id             String   @id @default(uuid())
+  reportType     String
+  assessmentId   String?
+  associationId  String?
+  generatedById  String?
+  fileId         String?
+  generatedAt    DateTime @default(now())
+  parametersJson Json?
+
+  assessment  Assessment?  @relation(fields: [assessmentId], references: [id])
+  association Association? @relation(fields: [associationId], references: [id])
+  generatedBy User?        @relation(fields: [generatedById], references: [id])
+
+  @@map("reports")
+}
+
+model Notification {
+  id           String   @id @default(uuid())
+  userId       String
+  title        String
+  message      String
+  type         String
+  relatedModel String?
+  relatedId    String?
+  isRead       Boolean  @default(false)
+  sentAt       DateTime?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  userId        String?
+  actionType    String
+  entityType    String
+  entityId      String?
+  oldValuesJson Json?
+  newValuesJson Json?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
