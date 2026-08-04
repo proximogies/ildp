@@ -1,9 +1,7 @@
-import * as Brevo from '@getbrevo/brevo';
+import { BrevoClient } from '@getbrevo/brevo';
 
 function getClient() {
-  const apiInstance = new Brevo.TransactionalEmailsApi();
-  apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
-  return apiInstance;
+  return new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
 }
 
 const MAIL_FROM = process.env.MAIL_FROM || 'noreply@ildp.org';
@@ -29,56 +27,54 @@ function baseTemplate(bodyContent) {
 }
 
 export async function sendInviteEmail({ to, firstName, inviteUrl }) {
-  const apiInstance = getClient();
+  const client = getClient();
 
-  const sendSmtpEmail = new Brevo.SendSmtpEmail();
-  sendSmtpEmail.sender = { name: MAIL_FROM_NAME, email: MAIL_FROM };
-  sendSmtpEmail.to = [{ email: to, name: firstName }];
-  sendSmtpEmail.subject = `You've been invited to ${APP_NAME}`;
-  sendSmtpEmail.htmlContent = baseTemplate(`
-    <p style="font-size: 16px; margin: 0 0 8px;">Hi <strong>${firstName}</strong>,</p>
-    <p style="color: #4b5563; margin: 0 0 24px;">
-      You've been invited to join the Inclusive Leadership Digital Platform.
-      Click the button below to set your password and activate your account.
-    </p>
-    <div style="text-align: center; margin: 28px 0;">
-      <a href="${inviteUrl}"
-        style="background: #2d6a4f; color: #ffffff; padding: 14px 36px; border-radius: 8px;
-               text-decoration: none; font-weight: 600; font-size: 15px; display: inline-block;">
-        Accept Invitation
-      </a>
-    </div>
-    <p style="color: #6b7280; font-size: 13px; margin: 0;">
-      This link expires in <strong>48 hours</strong>. If you weren't expecting this invite, you can safely ignore this email.
-    </p>
-  `);
-
-  await apiInstance.sendTransacEmail(sendSmtpEmail);
+  await client.transactionalEmails.sendTransacEmail({
+    sender: { name: MAIL_FROM_NAME, email: MAIL_FROM },
+    to: [{ email: to, name: firstName }],
+    subject: `You've been invited to ${APP_NAME}`,
+    htmlContent: baseTemplate(`
+      <p style="font-size: 16px; margin: 0 0 8px;">Hi <strong>${firstName}</strong>,</p>
+      <p style="color: #4b5563; margin: 0 0 24px;">
+        You've been invited to join the Inclusive Leadership Digital Platform.
+        Click the button below to set your password and activate your account.
+      </p>
+      <div style="text-align: center; margin: 28px 0;">
+        <a href="${inviteUrl}"
+          style="background: #2d6a4f; color: #ffffff; padding: 14px 36px; border-radius: 8px;
+                 text-decoration: none; font-weight: 600; font-size: 15px; display: inline-block;">
+          Accept Invitation
+        </a>
+      </div>
+      <p style="color: #6b7280; font-size: 13px; margin: 0;">
+        This link expires in <strong>48 hours</strong>. If you weren't expecting this invite, you can safely ignore this email.
+      </p>
+    `),
+  });
 }
 
 export async function sendPasswordResetEmail({ to, firstName, resetUrl }) {
-  const apiInstance = getClient();
+  const client = getClient();
 
-  const sendSmtpEmail = new Brevo.SendSmtpEmail();
-  sendSmtpEmail.sender = { name: MAIL_FROM_NAME, email: MAIL_FROM };
-  sendSmtpEmail.to = [{ email: to, name: firstName }];
-  sendSmtpEmail.subject = `Reset your ${APP_NAME} password`;
-  sendSmtpEmail.htmlContent = baseTemplate(`
-    <p style="font-size: 16px; margin: 0 0 8px;">Hi <strong>${firstName}</strong>,</p>
-    <p style="color: #4b5563; margin: 0 0 24px;">
-      We received a request to reset your password. Click the button below to choose a new one.
-    </p>
-    <div style="text-align: center; margin: 28px 0;">
-      <a href="${resetUrl}"
-        style="background: #2d6a4f; color: #ffffff; padding: 14px 36px; border-radius: 8px;
-               text-decoration: none; font-weight: 600; font-size: 15px; display: inline-block;">
-        Reset Password
-      </a>
-    </div>
-    <p style="color: #6b7280; font-size: 13px; margin: 0;">
-      This link expires in <strong>1 hour</strong>. If you didn't request a reset, you can safely ignore this email.
-    </p>
-  `);
-
-  await apiInstance.sendTransacEmail(sendSmtpEmail);
+  await client.transactionalEmails.sendTransacEmail({
+    sender: { name: MAIL_FROM_NAME, email: MAIL_FROM },
+    to: [{ email: to, name: firstName }],
+    subject: `Reset your ${APP_NAME} password`,
+    htmlContent: baseTemplate(`
+      <p style="font-size: 16px; margin: 0 0 8px;">Hi <strong>${firstName}</strong>,</p>
+      <p style="color: #4b5563; margin: 0 0 24px;">
+        We received a request to reset your password. Click the button below to choose a new one.
+      </p>
+      <div style="text-align: center; margin: 28px 0;">
+        <a href="${resetUrl}"
+          style="background: #2d6a4f; color: #ffffff; padding: 14px 36px; border-radius: 8px;
+                 text-decoration: none; font-weight: 600; font-size: 15px; display: inline-block;">
+          Reset Password
+        </a>
+      </div>
+      <p style="color: #6b7280; font-size: 13px; margin: 0;">
+        This link expires in <strong>1 hour</strong>. If you didn't request a reset, you can safely ignore this email.
+      </p>
+    `),
+  });
 }
