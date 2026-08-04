@@ -167,6 +167,119 @@ async function main() {
   }
   console.log('✓ Indicators seeded');
 
+  // ── Questions per Indicator ────────────────────────────────────────────────
+  // scoringType mapping:
+  //   numeric_scale  → rating_scale (0–4)
+  //   yes_no         → yes_no radio
+  //   weighted_choice → radio with weighted options
+
+  const questionDefs = [
+    // D01-I01
+    { indicatorCode: 'D01-I01', questionText: 'How many formal leadership positions are currently held by women in this association?', inputType: 'rating_scale', helpText: '0 = None, 1 = 1–2 positions, 2 = 3–4 positions, 3 = 5+ positions, 4 = Majority held by women', isRequired: true, sortOrder: 1 },
+    // D01-I02
+    { indicatorCode: 'D01-I02', questionText: 'How many formal leadership positions are currently held by youth (under 35) in this association?', inputType: 'rating_scale', helpText: '0 = None, 1 = 1–2 positions, 2 = 3–4 positions, 3 = 5+ positions, 4 = Majority held by youth', isRequired: true, sortOrder: 1 },
+    // D01-I03
+    { indicatorCode: 'D01-I03', questionText: 'What is the level of decision-making authority held by women leaders in the association?', inputType: 'radio', responseOptionsJson: ['No authority – advisory roles only', 'Limited authority – consulted but decisions made by men', 'Shared authority – decisions made jointly', 'Full authority – women lead key decisions'], helpText: 'Select the option that best describes the current situation', isRequired: true, sortOrder: 1 },
+    { indicatorCode: 'D01-I03', questionText: 'Are women leaders involved in financial decision-making?', inputType: 'yes_no', isRequired: false, sortOrder: 2 },
+
+    // D02-I01
+    { indicatorCode: 'D02-I01', questionText: 'What percentage of executive/committee roles are held by women?', inputType: 'radio', responseOptionsJson: ['0% – No women in executive roles', '1–25% – Very few women', '26–50% – Some representation', '51–75% – Good representation', 'Over 75% – Women are majority'], isRequired: true, sortOrder: 1 },
+    // D02-I02
+    { indicatorCode: 'D02-I02', questionText: 'What percentage of executive/committee roles are held by youth (under 35)?', inputType: 'radio', responseOptionsJson: ['0% – No youth in executive roles', '1–25% – Very few youth', '26–50% – Some representation', '51–75% – Good representation', 'Over 75% – Youth are majority'], isRequired: true, sortOrder: 1 },
+    // D02-I03
+    { indicatorCode: 'D02-I03', questionText: 'How actively do women and youth participate in meetings and decision-making processes?', inputType: 'radio', responseOptionsJson: ['They do not attend or rarely attend', 'They attend but rarely speak', 'They attend and occasionally contribute', 'They actively participate and their inputs are considered', 'They lead discussions and drive key decisions'], isRequired: true, sortOrder: 1 },
+    { indicatorCode: 'D02-I03', questionText: 'Are there any formal mechanisms to encourage participation from women and youth (e.g. reserved speaking time, agenda setting)?', inputType: 'yes_no', isRequired: false, sortOrder: 2 },
+
+    // D03-I01
+    { indicatorCode: 'D03-I01', questionText: 'Does the association provide equal access to training and capacity building for women and youth members?', inputType: 'yes_no', isRequired: true, sortOrder: 1 },
+    { indicatorCode: 'D03-I01', questionText: 'In the last 12 months, were women and youth included in at least one capacity building activity?', inputType: 'yes_no', isRequired: false, sortOrder: 2 },
+    // D03-I02
+    { indicatorCode: 'D03-I02', questionText: 'What is the level of access to financial resources and credit for women members?', inputType: 'radio', responseOptionsJson: ['No access – women are excluded from financial products', 'Limited access – some women access credit but with barriers', 'Moderate access – women access credit with some support', 'Good access – women regularly access financial resources', 'Full access – women have equal access with no barriers'], isRequired: true, sortOrder: 1 },
+    // D03-I03
+    { indicatorCode: 'D03-I03', questionText: 'What is the level of access to land and productive assets for women members?', inputType: 'radio', responseOptionsJson: ['No access – women cannot own or use land', 'Limited access – informal use only, no ownership', 'Partial access – some women have land rights', 'Good access – most women have documented land rights', 'Full access – women have equal rights to land and assets'], isRequired: true, sortOrder: 1 },
+
+    // D04-I01
+    { indicatorCode: 'D04-I01', questionText: 'Are meeting times scheduled to accommodate women and youth (e.g. avoiding conflicts with domestic responsibilities or school hours)?', inputType: 'yes_no', isRequired: true, sortOrder: 1 },
+    { indicatorCode: 'D04-I01', questionText: 'Are meeting times determined with input from women and youth members?', inputType: 'yes_no', isRequired: false, sortOrder: 2 },
+    // D04-I02
+    { indicatorCode: 'D04-I02', questionText: 'Are meeting venues accessible and safe for women and youth to attend?', inputType: 'yes_no', isRequired: true, sortOrder: 1 },
+    { indicatorCode: 'D04-I02', questionText: 'Is the meeting venue within reasonable distance (walkable or accessible by public transport) for most members?', inputType: 'yes_no', isRequired: false, sortOrder: 2 },
+    // D04-I03
+    { indicatorCode: 'D04-I03', questionText: 'Does the association provide childcare or transport support to help women attend meetings?', inputType: 'yes_no', isRequired: true, sortOrder: 1 },
+
+    // D05-I01
+    { indicatorCode: 'D05-I01', questionText: 'How would you describe the organizational culture around inclusion of women and youth?', inputType: 'radio', responseOptionsJson: ['Hostile – inclusion is actively resisted', 'Indifferent – inclusion is not a priority', 'Aware – inclusion is discussed but not acted on', 'Supportive – leadership encourages inclusion', 'Champion – inclusion is embedded in the culture'], isRequired: true, sortOrder: 1 },
+    // D05-I02
+    { indicatorCode: 'D05-I02', questionText: 'Does the leadership of the association openly and actively promote gender equity and youth inclusion?', inputType: 'radio', responseOptionsJson: ['Never – leadership does not address these issues', 'Rarely – occasional mention only', 'Sometimes – raised in some meetings or events', 'Often – regularly discussed and promoted', 'Always – leadership consistently champions inclusion'], isRequired: true, sortOrder: 1 },
+    // D05-I03
+    { indicatorCode: 'D05-I03', questionText: 'Are there any documented cases of discriminatory practices or norms that discourage women or youth from participating?', inputType: 'yes_no', helpText: 'Answer "No" if the association is free of discriminatory practices', isRequired: true, sortOrder: 1 },
+
+    // D06-I01
+    { indicatorCode: 'D06-I01', questionText: 'Does the association have formally documented inclusion targets (e.g. percentage of women in leadership, youth membership goals)?', inputType: 'yes_no', isRequired: true, sortOrder: 1 },
+    { indicatorCode: 'D06-I01', questionText: 'Are inclusion targets reviewed at least annually?', inputType: 'yes_no', isRequired: false, sortOrder: 2 },
+    // D06-I02
+    { indicatorCode: 'D06-I02', questionText: 'How regularly does the association monitor progress against inclusion indicators?', inputType: 'radio', responseOptionsJson: ['Never – no monitoring in place', 'Ad hoc – only when prompted by external parties', 'Annually – reviewed once per year', 'Quarterly – reviewed every three months', 'Continuously – monitored on an ongoing basis'], isRequired: true, sortOrder: 1 },
+    // D06-I03
+    { indicatorCode: 'D06-I03', questionText: 'Is there a formal grievance or feedback mechanism for members to raise inclusion-related concerns?', inputType: 'yes_no', isRequired: true, sortOrder: 1 },
+
+    // D07-I01
+    { indicatorCode: 'D07-I01', questionText: 'Do the association\'s external partners (NGOs, government, funders) actively support its inclusion goals?', inputType: 'radio', responseOptionsJson: ['No partners are engaged on inclusion', 'Partners are aware but provide no active support', 'Partners occasionally support inclusion activities', 'Partners regularly support and fund inclusion initiatives', 'Partners co-lead inclusion programs with the association'], isRequired: true, sortOrder: 1 },
+    // D07-I02
+    { indicatorCode: 'D07-I02', questionText: 'Does the association collaborate with government agencies or NGOs specifically on gender or youth inclusion programs?', inputType: 'yes_no', isRequired: true, sortOrder: 1 },
+
+    // D08-I01
+    { indicatorCode: 'D08-I01', questionText: 'What tangible benefits does the association offer specifically to women members to encourage active participation?', inputType: 'radio', responseOptionsJson: ['None – no specific benefits for women', 'Informal benefits only (e.g. social recognition)', 'Some financial benefits (e.g. small subsidies, savings groups)', 'Multiple structured benefits (training, credit, market access)', 'Comprehensive package – women receive full benefits equal to men plus targeted support'], isRequired: true, sortOrder: 1 },
+    // D08-I02
+    { indicatorCode: 'D08-I02', questionText: 'What tangible benefits does the association offer specifically to youth members to encourage active participation?', inputType: 'radio', responseOptionsJson: ['None – no specific benefits for youth', 'Informal benefits only (e.g. mentorship, recognition)', 'Some financial benefits (e.g. startup grants, subsidies)', 'Multiple structured benefits (training, employment, market access)', 'Comprehensive package – youth receive full benefits plus targeted development support'], isRequired: true, sortOrder: 1 },
+
+    // D09-I01
+    { indicatorCode: 'D09-I01', questionText: 'Does the association have a mentorship or succession planning program targeting women and youth for future leadership roles?', inputType: 'radio', responseOptionsJson: ['No program exists', 'Informal mentoring by senior leaders only', 'Structured mentorship program for some members', 'Formal mentorship program open to all women and youth', 'Comprehensive succession planning program with clear career pathways'], isRequired: true, sortOrder: 1 },
+    // D09-I02
+    { indicatorCode: 'D09-I02', questionText: 'Is inclusion of women and youth explicitly embedded in the association\'s strategic plan or constitution?', inputType: 'yes_no', isRequired: true, sortOrder: 1 },
+    // D09-I03
+    { indicatorCode: 'D09-I03', questionText: 'How often does the association reflect on and learn from its inclusion practices (e.g. through reviews, evaluations, or member feedback)?', inputType: 'radio', responseOptionsJson: ['Never', 'Ad hoc – only when a problem arises', 'Annually', 'Twice a year', 'Quarterly or more frequently'], isRequired: true, sortOrder: 1 },
+
+    // D10-I01
+    { indicatorCode: 'D10-I01', questionText: 'Has there been a measurable improvement in the number of women in leadership roles over the past 2–3 years?', inputType: 'rating_scale', helpText: '0 = Declined significantly, 1 = No change, 2 = Slight improvement, 3 = Moderate improvement, 4 = Significant improvement', isRequired: true, sortOrder: 1 },
+    // D10-I02
+    { indicatorCode: 'D10-I02', questionText: 'Has there been a measurable improvement in the number of youth in leadership roles over the past 2–3 years?', inputType: 'rating_scale', helpText: '0 = Declined significantly, 1 = No change, 2 = Slight improvement, 3 = Moderate improvement, 4 = Significant improvement', isRequired: true, sortOrder: 1 },
+    // D10-I03
+    { indicatorCode: 'D10-I03', questionText: 'Overall, how satisfied are members with the association\'s efforts toward inclusion of women and youth?', inputType: 'radio', responseOptionsJson: ['Very dissatisfied – significant concerns raised', 'Dissatisfied – more needs to be done', 'Neutral – neither satisfied nor dissatisfied', 'Satisfied – good progress noted', 'Very satisfied – members feel fully included and valued'], isRequired: true, sortOrder: 1 },
+    { indicatorCode: 'D10-I03', questionText: 'Have any formal complaints about exclusion or discrimination been filed in the past 12 months?', inputType: 'yes_no', isRequired: false, sortOrder: 2 },
+  ];
+
+  // Build indicator lookup by code
+  const indicatorMap = {};
+  const allIndicators = await prisma.domainIndicator.findMany();
+  for (const ind of allIndicators) {
+    indicatorMap[ind.code] = ind;
+  }
+
+  for (const q of questionDefs) {
+    const indicator = indicatorMap[q.indicatorCode];
+    if (!indicator) { console.warn(`Indicator not found: ${q.indicatorCode}`); continue; }
+
+    // Check if question already exists (idempotent)
+    const existing = await prisma.indicatorQuestion.findFirst({
+      where: { indicatorId: indicator.id, questionText: q.questionText },
+    });
+    if (existing) continue;
+
+    await prisma.indicatorQuestion.create({
+      data: {
+        indicatorId: indicator.id,
+        questionText: q.questionText,
+        helpText: q.helpText || null,
+        inputType: q.inputType,
+        responseOptionsJson: q.responseOptionsJson || null,
+        sortOrder: q.sortOrder,
+        isRequired: q.isRequired ?? false,
+        isActive: true,
+      },
+    });
+  }
+  console.log('✓ Indicator questions seeded');
+
   // ── Default Recommendations ────────────────────────────────────────────────
   const d02 = createdDomains['D02'];
   const d04 = createdDomains['D04'];
