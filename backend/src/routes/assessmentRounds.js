@@ -60,6 +60,15 @@ router.put('/:id', authorize('create_assessment'), async (req, res) => {
   res.json({ success: true, data: round });
 });
 
+// POST /api/assessment-rounds/:id/activate
+router.post('/:id/activate', authorize('create_assessment'), async (req, res) => {
+  const round = await prisma.assessmentRound.update({
+    where: { id: req.params.id },
+    data: { status: 'active' },
+  });
+  res.json({ success: true, data: round });
+});
+
 // POST /api/assessment-rounds/:id/close
 router.post('/:id/close', authorize('create_assessment'), async (req, res) => {
   const round = await prisma.assessmentRound.update({
