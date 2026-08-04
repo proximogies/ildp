@@ -4,6 +4,9 @@ import Layout from './components/Layout.jsx';
 
 // Pages
 import LoginPage from './pages/LoginPage.jsx';
+import AcceptInvitePage from './pages/AcceptInvitePage.jsx';
+import ResetPasswordPage from './pages/ResetPasswordPage.jsx';
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import AssociationsPage from './pages/AssociationsPage.jsx';
 import AssociationProfilePage from './pages/AssociationProfilePage.jsx';
@@ -28,6 +31,9 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+      <Route path="/accept-invite" element={<AcceptInvitePage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route index element={<DashboardPage />} />
         <Route path="associations" element={<AssociationsPage />} />

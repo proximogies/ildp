@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useForm } from 'react-hook-form';
 import { Sprout, ArrowRight, AlertCircle } from 'lucide-react';
@@ -69,9 +69,9 @@ export default function LoginPage() {
             </div>
 
             <div className="flex items-center justify-end">
-              <a href="#" className="text-sm text-growth-600 hover:text-growth-700 font-semibold hover:underline transition-colors">
+              <Link to="/forgot-password" className="text-sm text-growth-600 hover:text-growth-700 font-semibold hover:underline transition-colors">
                 Forgot password?
-              </a>
+              </Link>
             </div>
 
             <button 
