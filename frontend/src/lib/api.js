@@ -11,7 +11,14 @@ api.interceptors.request.use(config => {
 api.interceptors.response.use(
   res => res,
   err => {
-    if (err.response?.status === 401) {
+    // Only force logout on 401s from auth endpoints, not from every API error
+    const url = err.config?.url || '';
+    const isAuthError = err.response?.status === 401;
+    const isAuthRoute = url.includes('/auth/');
+    const message = err.response?.data?.message || '';
+    const isTokenError = message.toLowerCase().includes('token') || message.toLowerCase().includes('no token');
+
+    if (isAuthError && (isAuthRoute || isTokenError)) {
       localStorage.removeItem('ildp_token');
       localStorage.removeItem('ildp_user');
       window.location.href = '/login';

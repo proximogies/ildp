@@ -108,7 +108,11 @@ router.post('/', authorize('manage_users'), [
 
 // POST /api/users/:id/resend-invite
 router.post('/:id/resend-invite', authorize('manage_users'), async (req, res) => {
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: req.params.id } });
+  const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User not found' });
+  }
 
   if (user.status !== 'invited') {
     return res.status(400).json({ success: false, message: 'User has already accepted their invite' });
@@ -125,7 +129,12 @@ router.post('/:id/resend-invite', authorize('manage_users'), async (req, res) =>
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   const inviteUrl = `${frontendUrl}/accept-invite?token=${inviteToken}`;
 
-  await sendInviteEmail({ to: user.email, firstName: user.firstName, inviteUrl });
+  try {
+    await sendInviteEmail({ to: user.email, firstName: user.firstName, inviteUrl });
+  } catch (err) {
+    console.error('Failed to resend invite email:', err.message);
+    return res.status(500).json({ success: false, message: 'Failed to send invite email. Check your email service configuration.' });
+  }
 
   res.json({ success: true, message: 'Invite resent' });
 });
