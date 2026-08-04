@@ -23,14 +23,22 @@ router.get('/', async (req, res) => {
 // POST /api/assessment-rounds
 router.post('/', authorize('create_assessment'), [
   body('title').notEmpty(),
-  body('startDate').isISO8601(),
-  body('endDate').isISO8601(),
+  body('startDate').notEmpty(),
+  body('endDate').notEmpty(),
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() });
 
+  const { title, description, startDate, endDate } = req.body;
+
   const round = await prisma.assessmentRound.create({
-    data: { ...req.body, createdById: req.user.id },
+    data: {
+      title,
+      description: description || null,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      createdById: req.user.id,
+    },
   });
   res.status(201).json({ success: true, data: round });
 });
@@ -53,9 +61,17 @@ router.get('/:id', async (req, res) => {
 
 // PUT /api/assessment-rounds/:id
 router.put('/:id', authorize('create_assessment'), async (req, res) => {
+  const { title, description, startDate, endDate, status } = req.body;
+  const data = {};
+  if (title !== undefined) data.title = title;
+  if (description !== undefined) data.description = description || null;
+  if (startDate !== undefined) data.startDate = new Date(startDate);
+  if (endDate !== undefined) data.endDate = new Date(endDate);
+  if (status !== undefined) data.status = status;
+
   const round = await prisma.assessmentRound.update({
     where: { id: req.params.id },
-    data: req.body,
+    data,
   });
   res.json({ success: true, data: round });
 });
